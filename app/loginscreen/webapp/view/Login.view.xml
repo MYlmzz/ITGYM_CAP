@@ -1,0 +1,33 @@
+<mvc:View controllerName="loginscreen.controller.Login"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+
+  <Page id="_IDGenPage" class="loginPage" showHeader="false">
+    <content>
+
+      <VBox id="_IDGenVBox" height="100%" alignItems="Center" justifyContent="Center">
+
+        <VBox id="_IDGenVBox1" class="loginCard" alignItems="Center">
+
+          <!-- Logo -->
+          <Image id="_IDGenImage" src="webapp/assets/cap_logo.png" class="loginLogo" />
+
+          <!-- Title -->
+          <Text id="_IDGenText" text="Welcome" class="loginTitle" />
+
+          <!-- Email -->
+          <Input id="email" placeholder="Email" type="Email" width="100%" />
+
+          <!-- Password -->
+          <Input id="password" placeholder="Password" type="Password" width="100%" class="sapUiSmallMarginTop" />
+
+          <!-- Login Button -->
+          <Button id="_IDGenButton1" text="Login" type="Emphasized" width="100%" press="onLogin" class="loginButton" />
+
+        </VBox>
+
+      </VBox>
+
+    </content>
+  </Page>
+</mvc:View>

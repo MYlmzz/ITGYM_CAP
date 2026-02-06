@@ -1,0 +1,96 @@
+<mvc:View controllerName="loginscreen.controller.MemberCreate"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core">
+
+  <Page id="_IDGenPage1" title="Yeni Üye Kaydı" showNavButton="true" navButtonPress="onNavBack" class="sapUiContentPadding">
+
+    <content>
+      <!-- Sayfa içeriğini daralt: okunabilirlik + estetik -->
+      <VBox id="_IDGenVBox3" class="sapUiSmallMarginTop" width="100%" alignItems="Center">
+        <VBox id="_IDGenVBox4" width="100%" class="sapUiSmallMargin">
+
+          <!-- Üst açıklama -->
+          <ObjectHeader id="_IDGenObjectHeader" title="Üye Bilgileri" intro="Yeni bir üye oluşturmak için aşağıdaki alanları doldurun." responsive="true" />
+
+          <!-- Kart görünümü -->
+          <Panel id="_IDGenPanel" headerText="Temel Bilgiler" backgroundDesign="Translucent" class="sapUiSmallMarginTop">
+
+            <content>
+              <VBox id="_IDGenVBox5" class="sapUiSmallMargin">
+
+                <!-- 2 kolon düzeni: desktop/tablet yan yana, mobile alt alta -->
+                <FlexBox id="_IDGenFlexBox" wrap="Wrap" justifyContent="SpaceBetween" alignItems="Start" class="sapUiSmallMarginBottom">
+
+                  <!-- Sol kolon -->
+                  <VBox id="_IDGenVBox6" width="48%" class="sapUiSmallMarginBottom">
+                    <Label id="_IDGenLabel" text="Ad" required="true" />
+                    <Input id="_IDGenInput" value="{member>/firstname}" width="100%" placeholder="Örn: Ali" />
+
+                    <Label id="_IDGenLabel1" text="Telefon" class="sapUiSmallMarginTop" />
+                    <Input id="_IDGenInput1" value="{member>/phone}" width="100%" placeholder="05xx xxx xx xx" />
+                  </VBox>
+
+                  <!-- Sağ kolon -->
+                  <VBox id="_IDGenVBox7" width="48%" class="sapUiSmallMarginBottom">
+                    <Label id="_IDGenLabel2" text="Soyad" required="true" />
+                    <Input id="_IDGenInput2" value="{member>/lastname}" width="100%" placeholder="Örn: Yılmaz" />
+
+                    <Label id="_IDGenLabel3" text="E-posta" class="sapUiSmallMarginTop" />
+                    <Input id="_IDGenInput3" value="{member>/email}" type="Email" width="100%" placeholder="ornek@domain.com" />
+                  </VBox>
+
+                </FlexBox>
+
+                <!-- Ayrım çizgisi -->
+                <Toolbar id="_IDGenToolbar" design="Transparent">
+                  <Title id="_IDGenTitle1" text="Durum" level="H4"/>
+                </Toolbar>
+
+                <HBox id="_IDGenHBox" justifyContent="SpaceBetween" alignItems="Center" width="100%">
+                  <Text id="_IDGenText1" text="Üyenin sistemdeki aktiflik durumu" />
+                  <Select id="_IDGenSelect" selectedKey="{member>/status}" width="240px">
+                    <core:Item id="_IDGenItem" key="ACTIVE" text="Aktif" />
+                    <core:Item id="_IDGenItem1" key="PASSIVE" text="Pasif" />
+                  </Select>
+                </HBox>
+
+                <!-- Üyelik -->
+                <Toolbar id="_IDGenToolbar2" design="Transparent" class="sapUiSmallMarginTop">
+                  <Title id="_IDGenTitle2" text="Üyelik" level="H4"/>
+                </Toolbar>
+
+                <VBox id="_IDGenVBox8">
+
+                  <HBox id="_IDGenHBox1" class="sapUiSmallMarginTop" justifyContent="SpaceBetween" alignItems="Center" width="100%">
+
+                    <VBox id="_IDGenVBox10" width="48%">
+                      <Label id="_IDGenLabel5" text="Paket (Opsiyonel)"/>
+                      <Select id="_IDGenSelect2" selectedKey="{member>/plan_ID}" enabled="{= ${member>/startMembership} }" width="100%" items="{
+    path: 'admin>/MembershipPlans'
+  }">
+                        <core:Item id="_IDGenItem2" key="{admin>ID}" text="{admin>name}" />
+                      </Select>
+                    </VBox>
+
+                  </HBox>
+                </VBox>
+
+              </VBox>
+            </content>
+          </Panel>
+
+        </VBox>
+      </VBox>
+    </content>
+
+    <footer>
+      <Toolbar id="_IDGenToolbar1">
+        <Button id="_IDGenButton5" text="İptal" type="Transparent" press="onNavBack" />
+        <ToolbarSpacer id="_IDGenToolbarSpacer" />
+        <Button id="_IDGenButton6" text="Kaydet" type="Emphasized" icon="sap-icon://save" press="onSave" />
+      </Toolbar>
+    </footer>
+
+  </Page>
+</mvc:View>

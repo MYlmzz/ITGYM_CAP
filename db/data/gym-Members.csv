@@ -1,0 +1,6 @@
+ID;firstName;lastName;phone;email;status;createdAt
+aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa;Ali;Yılmaz;5551112233;ali@example.com;ACTIVE;2025-09-05T10:10:00Z
+bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb;Ayşe;Demir;5552223344;ayse@example.com;ACTIVE;2025-10-12T09:00:00Z
+cccccccc-cccc-cccc-cccc-cccccccccccc;Mehmet;Kaya;5553334455;mehmet@example.com;ACTIVE;2025-11-20T12:30:00Z
+dddddddd-dddd-dddd-dddd-dddddddddddd;Zeynep;Çelik;5554445566;zeynep@example.com;PASSIVE;2025-12-02T08:15:00Z
+eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee;Can;Aydın;5555556677;can@example.com;ACTIVE;2026-01-10T14:05:00Z

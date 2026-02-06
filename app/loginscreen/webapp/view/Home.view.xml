@@ -1,0 +1,144 @@
+<mvc:View controllerName="loginscreen.controller.Home"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.f"
+  xmlns:m="sap.m"
+  xmlns:l="sap.ui.layout"
+  xmlns:viz="sap.viz.ui5.controls"
+  xmlns:viz.data="sap.viz.ui5.data"
+  xmlns:viz.feeds="sap.viz.ui5.controls.common.feeds">
+
+  <DynamicPage id="dpHome" fitContent="false">
+    <title>
+      <DynamicPageTitle id="_IDGenDynamicPageTitle">
+        <heading>
+          <m:Title id="_IDGenTitle" text="MYFIT" level="H1"/>
+        </heading>
+        <actions>
+          <m:Button id="_IDGenButton" text="Yenile" icon="sap-icon://refresh" press=".onRefresh"/>
+          <m:Button id="_IDGenButton2" text="Çıkış" type="Transparent" icon="sap-icon://log" press=".onLogout"/>
+          <m:Button id="_IDGenButton3" text="Yeni Üye Kayıt" icon="sap-icon://add" type="Emphasized" press=".onCreateMember"/>
+        </actions>
+      </DynamicPageTitle>
+    </title>
+
+    <content>
+      <m:VBox id="_IDGenVBox2" class="sapUiSmallMargin">
+
+        <!-- KPI Tiles -->
+        <l:Grid id="_IDGenGrid" defaultSpan="XL3 L3 M6 S12" vSpacing="1" hSpacing="1">
+          <m:GenericTile id="_IDGenGenericTile" header="Toplam Üye" subheader="Tümü" press=".onKpiPress">
+            <m:TileContent id="_IDGenTileContent">
+              <m:NumericContent id="_IDGenNumericContent" value="{kpi>/totalMembers}" indicator="None"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+          <m:GenericTile id="_IDGenGenericTile1" header="Aktif Üye" subheader="Geçerli üyelik" press=".onKpiPress">
+            <m:TileContent id="_IDGenTileContent1">
+              <m:NumericContent id="_IDGenNumericContent1" value="{kpi>/activeMembers}" valueColor="Good"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+          <m:GenericTile id="_IDGenGenericTile2" header="Süresi Dolan" subheader="Aksiyon gerekli" press=".onKpiPress">
+            <m:TileContent id="_IDGenTileContent2">
+              <m:NumericContent id="_IDGenNumericContent2" value="{kpi>/expiredMembers}" valueColor="Error"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+          <m:GenericTile id="_IDGenGenericTile3" header="Bu Ay Gelir" subheader="₺" press=".onKpiPress">
+            <m:TileContent id="_IDGenTileContent3">
+              <m:NumericContent id="_IDGenNumericContent3" value="{kpi>/monthRevenue}" indicator="Up"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+          <m:GenericTile id="_IDGenGenericTile5" header="Bugün Check-in" subheader="Giriş sayısı">
+            <m:TileContent id="_IDGenTileContent4">
+              <m:NumericContent id="_IDGenNumericContent4" value="{kpi>/todayCheckins}" valueColor="Neutral"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+        </l:Grid>
+
+        <!-- Charts -->
+        <l:Grid id="_IDGenGrid1" defaultSpan="XL6 L6 M12 S12" vSpacing="1" hSpacing="1">
+
+          <!-- Line: Monthly new members -->
+          <m:Panel id="_IDGenPanel1" headerText="Aylık Yeni Üye Trend" expandable="false">
+            <viz:VizFrame id="vizMembers" vizType="line" height="320px" uiConfig="{applicationSet:'fiori'}" vizProperties="{
+                'plotArea': {'dataLabel': {'visible': false}},
+                'legend': {'visible': false},
+                'title': {'visible': false}
+              }">
+
+              <viz:dataset>
+                <viz.data:FlattenedDataset id="_IDGenFlattenedDataset" data="{membersTrend>/data}">
+                  <viz.data:dimensions>
+                    <viz.data:DimensionDefinition id="_IDGenDimensionDefinition" name="Ay" value="{month}"/>
+                  </viz.data:dimensions>
+                  <viz.data:measures>
+                    <viz.data:MeasureDefinition id="_IDGenMeasureDefinition" name="Yeni Üye" value="{newMembers}"/>
+                  </viz.data:measures>
+                </viz.data:FlattenedDataset>
+              </viz:dataset>
+
+              <viz:feeds>
+                <viz.feeds:FeedItem id="_IDGenFeedItem" uid="categoryAxis" type="Dimension" values="Ay"/>
+                <viz.feeds:FeedItem id="_IDGenFeedItem1" uid="valueAxis" type="Measure" values="Yeni Üye"/>
+              </viz:feeds>
+
+            </viz:VizFrame>
+          </m:Panel>
+
+          <!-- Donut: Membership type distribution -->
+          <m:Panel id="_IDGenPanel2" headerText="Üyelik Tipi Dağılımı" expandable="false">
+            <viz:VizFrame id="vizMembership" vizType="donut" height="320px" uiConfig="{applicationSet:'fiori'}" vizProperties="{
+                'legend': {'visible': true},
+                'title': {'visible': false}
+              }">
+
+              <viz:dataset>
+                <viz.data:FlattenedDataset id="_IDGenFlattenedDataset1" data="{membershipDist>/data}">
+                  <viz.data:dimensions>
+                    <viz.data:DimensionDefinition id="_IDGenDimensionDefinition1" name="Paket" value="{type}"/>
+                  </viz.data:dimensions>
+                  <viz.data:measures>
+                    <viz.data:MeasureDefinition id="_IDGenMeasureDefinition1" name="Adet" value="{count}"/>
+                  </viz.data:measures>
+                </viz.data:FlattenedDataset>
+              </viz:dataset>
+
+              <viz:feeds>
+                <viz.feeds:FeedItem id="_IDGenFeedItem2" uid="color" type="Dimension" values="Paket"/>
+                <viz.feeds:FeedItem id="_IDGenFeedItem3" uid="size" type="Measure" values="Adet"/>
+              </viz:feeds>
+
+            </viz:VizFrame>
+          </m:Panel>
+
+        </l:Grid>
+
+        <!-- Alerts + Latest Check-ins -->
+        <l:Grid id="_IDGenGrid2" defaultSpan="XL6 L6 M12 S12" vSpacing="1" hSpacing="1">
+
+          <m:Panel id="_IDGenPanel3" headerText="Uyarılar / Aksiyonlar" expandable="false">
+            <m:List id="_IDGenList" items="{alerts>/items}" growing="true" growingScrollToLoad="true">
+              <m:StandardListItem id="_IDGenStandardListItem" title="{alerts>title}" description="{alerts>desc}" info="{alerts>count}" infoState="{alerts>state}" type="Navigation" press=".onAlertPress"/>
+            </m:List>
+          </m:Panel>
+
+          <m:Panel id="_IDGenPanel4" headerText="Son Check-in (Bugün)" expandable="false">
+            <m:List id="_IDGenList1" items="{checkins>/items}" growing="true" growingScrollToLoad="true">
+              <m:ObjectListItem id="_IDGenObjectListItem" title="{checkins>memberName}" number="{checkins>time}" numberUnit="" intro="{checkins>membership}">
+                <m:firstStatus>
+                  <m:ObjectStatus id="_IDGenObjectStatus" text="{checkins>statusText}" state="{checkins>statusState}"/>
+                </m:firstStatus>
+              </m:ObjectListItem>
+            </m:List>
+          </m:Panel>
+
+        </l:Grid>
+
+      </m:VBox>
+    </content>
+  </DynamicPage>
+
+</mvc:View>
