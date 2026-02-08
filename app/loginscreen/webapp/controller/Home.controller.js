@@ -35,20 +35,20 @@ sap.ui.define([
         const oAdmin = this.getOwnerComponent().getModel("admin");
 
         const aResults = await Promise.allSettled([
-  this._readAll(oAdmin, "/DashboardKPI"),
-  this._readAll(oAdmin, "/MembersTrend"),
-  this._readAll(oAdmin, "/MembershipDist"),
-  this._readAll(oAdmin, "/Alerts"),
-  this._readAll(oAdmin, "/TodayCheckins")
-]);
+          this._readAll(oAdmin, "/DashboardKPI"),
+          this._readAll(oAdmin, "/MembersTrend"),
+          this._readAll(oAdmin, "/MembershipDist"),
+          this._readAll(oAdmin, "/Alerts"),
+          this._readAll(oAdmin, "/TodayCheckins")
+        ]);
 
-const [rKpi, rTrend, rDist, rAlerts, rCheckins] = aResults;
+        const [rKpi, rTrend, rDist, rAlerts, rCheckins] = aResults;
 
-const aKpi      = rKpi.status === "fulfilled" ? rKpi.value : [];
-const aTrend    = rTrend.status === "fulfilled" ? rTrend.value : [];
-const aDist     = rDist.status === "fulfilled" ? rDist.value : [];
-const aAlerts   = rAlerts.status === "fulfilled" ? rAlerts.value : [];
-const aCheckins = rCheckins.status === "fulfilled" ? rCheckins.value : [];
+        const aKpi = rKpi.status === "fulfilled" ? rKpi.value : [];
+        const aTrend = rTrend.status === "fulfilled" ? rTrend.value : [];
+        const aDist = rDist.status === "fulfilled" ? rDist.value : [];
+        const aAlerts = rAlerts.status === "fulfilled" ? rAlerts.value : [];
+        const aCheckins = rCheckins.status === "fulfilled" ? rCheckins.value : [];
 
         // KPI tek satır
         const oKpi = aKpi[0] || {};
@@ -78,50 +78,50 @@ const aCheckins = rCheckins.status === "fulfilled" ? rCheckins.value : [];
         });
 
         // Alerts
-       const a = (aAlerts || []).map(x => ({
-  title: x.title,
-  desc: x.desc,
-  count: String(x.count || 0),
-  state: x.state || "Information"
-}));
+        const a = (aAlerts || []).map(x => ({
+          title: x.title,
+          desc: x.desc,
+          count: String(x.count || 0),
+          state: x.state || "Information"
+        }));
 
-this.getView().getModel("alerts").setData({
-  items: a.length ? a : [{
-    title: "Her şey yolunda",
-    desc: "Şu anda aksiyon gerektiren bir durum yok",
-    count: "",
-    state: "Success"
-  }]
-});
+        this.getView().getModel("alerts").setData({
+          items: a.length ? a : [{
+            title: "Her şey yolunda",
+            desc: "Şu anda aksiyon gerektiren bir durum yok",
+            count: "",
+            state: "Success"
+          }]
+        });
 
         // Today Checkins
-      const c = (aCheckins || []).map(x => ({
-  memberName: x.memberName,
-  time: x.time,
-  membership: x.membership || "",
-  statusText: x.statusText || "",
-  statusState: x.statusState || "None"
-}));
+        const c = (aCheckins || []).map(x => ({
+          memberName: x.memberName,
+          time: x.time,
+          membership: x.membership || "",
+          statusText: x.statusText || "",
+          statusState: x.statusState || "None"
+        }));
 
-this.getView().getModel("checkins").setData({
-  items: c.length ? c : [{
-    memberName: "Kayıt yok",
-    time: "",
-    membership: "",
-    statusText: "Son 24 saatte check-in bulunamadı",
-    statusState: "Information"
-  }]
-});
+        this.getView().getModel("checkins").setData({
+          items: c.length ? c : [{
+            memberName: "Kayıt yok",
+            time: "",
+            membership: "",
+            statusText: "Son 24 saatte check-in bulunamadı",
+            statusState: "Information"
+          }]
+        });
 
         if (bShowToast) MessageToast.show("Dashboard güncellendi");
       } catch (e) {
-       // UI5 OData hataları bazen iç içe gelir
-  console.error("Dashboard load error:", e);
+        // UI5 OData hataları bazen iç içe gelir
+        console.error("Dashboard load error:", e);
 
-  const sMsg =
-    e?.message ||
-    e?.toString?.() ||
-    "Bilinmeyen hata";
+        const sMsg =
+          e?.message ||
+          e?.toString?.() ||
+          "Bilinmeyen hata";
 
         MessageToast.show("Dashboard yüklenemedi: " + (e?.message || e));
       }
@@ -141,9 +141,9 @@ this.getView().getModel("checkins").setData({
       sap.ui.core.UIComponent.getRouterFor(this).navTo("RouteLogin", {}, true);
     },
 
-    onCreateMember: function(){
+    onCreateMember: function () {
       console.log("Yeni Üye tıklandı");
-  sap.m.MessageToast.show("Yeni Üye tıklandı");
+      sap.m.MessageToast.show("Yeni Üye tıklandı");
       const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
       oRouter.navTo("RouteMemberCreate");
     },
@@ -152,8 +152,21 @@ this.getView().getModel("checkins").setData({
       MessageToast.show(oEvent.getSource().getTitle());
     },
 
-    onKpiPress: function () {
-      MessageToast.show("KPI tıklandı");
-    }
+    onKpiPress: function (oEvent) {
+      // Hangi tile tıklandı?
+      const oSource = oEvent.getSource();
+      const sHeader = oSource.getHeader?.() || "";
+
+      if (sHeader === "Toplam Üye") {
+        // Members List sayfasına git
+        const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+        oRouter.navTo("RouteMembersList");
+      } else {
+        MessageToast.show(sHeader + " tıklandı");
+      }
+    },
+    onTotalMembersPress: function () {
+        sap.m.URLHelper.redirect("/memberslist/index.html", false);
+    },
   });
 });

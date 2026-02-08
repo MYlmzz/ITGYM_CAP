@@ -22,7 +22,8 @@
     "undeploy": "cf undeploy ITGYM --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
-    "watch-home": "cds watch --open home/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-home": "cds watch --open home/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-memberslist": "cds watch --open memberslist/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
   "cds": {
@@ -37,5 +38,8 @@
   },
   "workspaces": [
     "app/*"
+  ],
+  "sapux": [
+    "app/memberslist"
   ]
 }

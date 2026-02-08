@@ -26,7 +26,7 @@
 
         <!-- KPI Tiles -->
         <l:Grid id="_IDGenGrid" defaultSpan="XL3 L3 M6 S12" vSpacing="1" hSpacing="1">
-          <m:GenericTile id="_IDGenGenericTile" header="Toplam Üye" subheader="Tümü" press=".onKpiPress">
+          <m:GenericTile id="_IDGenGenericTile" header="Toplam Üye" subheader="Tümü" press=".onTotalMembersPress">
             <m:TileContent id="_IDGenTileContent">
               <m:NumericContent id="_IDGenNumericContent" value="{kpi>/totalMembers}" indicator="None"/>
             </m:TileContent>

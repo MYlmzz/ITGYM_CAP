@@ -109,7 +109,8 @@
         "viewType": "XML",
         "path": "loginscreen.view",
         "async": true,
-        "viewPath": "loginscreen.view"
+        "viewPath": "loginscreen.view",
+        "async": true
       },
       "routes": [
         {
@@ -127,10 +128,12 @@
           ]
         },
         {
-  "name": "RouteMemberCreate",
-  "pattern": "member/create",
-  "target": ["TargetMemberCreate"]
-}
+          "name": "RouteMemberCreate",
+          "pattern": "member/create",
+          "target": [
+            "TargetMemberCreate"
+          ]
+        }
       ],
       "targets": {
         "TargetLogin": {
@@ -141,10 +144,10 @@
           "id": "Home",
           "name": "Home"
         },
-              "TargetMemberCreate": {
-  "id": "MemberCreate",
-  "name": "MemberCreate"
-}
+        "TargetMemberCreate": {
+          "id": "MemberCreate",
+          "name": "MemberCreate"
+        }
       }
     },
     "rootView": {
