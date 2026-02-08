@@ -1,14 +1,16 @@
-using gym as db from '../db/gym';
+using { gym as db } from '../db/gym';
 
 service AdminService @(path:'/odata/v4/admin') {
 
   // CRUD ekranları için (şimdilik kalsın)
+  @cds.redirection.target
   entity Members           as projection on db.Members;
   entity MembershipPlans   as projection on db.MembershipPlans;
   entity MemberMemberships as projection on db.MemberMemberships;
   entity Payments          as projection on db.Payments;
   entity Checkins          as projection on db.Checkins;
-
+  entity ActiveMembers     as projection on Members where status = 'ACTIVE';
+  entity PassiveMembers    as projection on Members where status = 'PASSIVE';
   // Dashboard read-only (hesaplanmış)
   @readonly entity DashboardKPI {
     key ID           : String(1);

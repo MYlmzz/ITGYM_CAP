@@ -166,7 +166,13 @@ sap.ui.define([
       }
     },
     onTotalMembersPress: function () {
-        sap.m.URLHelper.redirect("/memberslist/index.html", false);
+      sap.m.URLHelper.redirect("/memberslist/index.html", false);
     },
+    onPressActiveMembers: function () {
+      sap.m.URLHelper.redirect("/memberslist/index.html#/ActiveMembers", false);
+    },
+    onPressPassiveMembers: function () {
+      sap.m.URLHelper.redirect("/memberslist/index.html#/PassiveMembers", false);
+    }
   });
 });

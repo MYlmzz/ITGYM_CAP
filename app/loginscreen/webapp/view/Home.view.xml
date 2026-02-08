@@ -32,13 +32,13 @@
             </m:TileContent>
           </m:GenericTile>
 
-          <m:GenericTile id="_IDGenGenericTile1" header="Aktif Üye" subheader="Geçerli üyelik" press=".onKpiPress">
+          <m:GenericTile id="_IDGenGenericTile1" header="Aktif Üye" subheader="Geçerli üyelik" press=".onPressActiveMembers">
             <m:TileContent id="_IDGenTileContent1">
               <m:NumericContent id="_IDGenNumericContent1" value="{kpi>/activeMembers}" valueColor="Good"/>
             </m:TileContent>
           </m:GenericTile>
 
-          <m:GenericTile id="_IDGenGenericTile2" header="Süresi Dolan" subheader="Aksiyon gerekli" press=".onKpiPress">
+          <m:GenericTile id="_IDGenGenericTile2" header="Süresi Dolan" subheader="Aksiyon gerekli" press=".onPressPassiveMembers">
             <m:TileContent id="_IDGenTileContent2">
               <m:NumericContent id="_IDGenNumericContent2" value="{kpi>/expiredMembers}" valueColor="Error"/>
             </m:TileContent>

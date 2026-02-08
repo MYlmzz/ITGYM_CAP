@@ -84,14 +84,24 @@
       "config": {},
       "routes": [
         {
-          "pattern": ":?query:",
-          "name": "MembersList",
-          "target": "MembersList"
+          "pattern": "ActiveMembers",
+          "name": "ActiveMembersList",
+          "target": "ActiveMembersList"
+        },
+        {
+          "pattern": "PassiveMembers",
+          "name": "PassiveMembersList",
+          "target": "PassiveMembersList"
         },
         {
           "pattern": "Members({key}):?query:",
           "name": "MembersObjectPage",
           "target": "MembersObjectPage"
+        },
+        {
+          "pattern": ":?query:",
+          "name": "MembersList",
+          "target": "MembersList"
         }
       ],
       "targets": {
@@ -110,6 +120,42 @@
                   }
                 }
               },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ActiveMembersList": {
+          "type": "Component",
+          "id": "ActiveMembersList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/ActiveMembers",
+              "variantManagement": "Page",
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "PassiveMembersList": {
+          "type": "Component",
+          "id": "PassiveMembersList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/PassiveMembers",
+              "variantManagement": "Page",
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
