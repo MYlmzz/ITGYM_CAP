@@ -1,9 +1,31 @@
 const cds = require("@sap/cds");
+const { SELECT, INSERT } = cds.ql;
+
+async function getPricingByCode(db, code) {
+  const p = await db.run(
+    SELECT.one.from("gym.PricingPlans")
+      .columns(["code", "basePrice", "studentDiscountPct", "currency", "durationMonths"])
+      .where({ code, isActive: true })
+  );
+  if (!p) throw new Error(`PricingPlans not found for code=${code}`);
+  return p;
+}
+
+function calcAmount(pricing, isStudent) {
+  let amount = Number(pricing.basePrice || 0);
+  if (isStudent) {
+    const pct = Number(pricing.studentDiscountPct ?? 10);
+    amount = amount * (1 - pct / 100);
+  }
+  return Math.round(amount * 100) / 100;
+}
 
 module.exports = (srv) => {
-  const { Members, MemberMemberships, Payments, Checkins } = srv.entities;
+  const { Members, MemberMemberships, MembershipPlans, Payments, Checkins } = srv.entities;
 
-  // KPI
+  // -----------------------------
+  // Dashboard KPI
+  // -----------------------------
   srv.on("READ", "DashboardKPI", async (req) => {
     const db = cds.tx(req);
 
@@ -17,26 +39,22 @@ module.exports = (srv) => {
       await db.run(cds.ql.SELECT`count(1) as CNT`.from(MemberMemberships).where({ status: "EXPIRED" }));
 
     const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
 
-    // Month revenue (ay başından itibaren)
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const [{ SUM: monthRevenue } = { SUM: 0 }] =
-      await db.run(
-        cds.ql.SELECT`sum(amount) as SUM`
-          .from(Payments)
-          .where({ status: "PAID" })
-          .and(`paidAt >=`, monthStart)
-      );
+    const [{ SUM: monthRevenue } = { SUM: 0 }] = await db.run(
+      cds.ql.SELECT`coalesce(sum(amount), 0) as SUM`
+        .from(Payments)
+        .where({ status: "PAID" })
+        .and`paidAt >= ${monthStart} and paidAt < ${nextMonthStart}`
+    );
 
-    // Today checkins (günün başından)
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const [{ CNT: todayCheckins } = { CNT: 0 }] =
-      await db.run(
-        cds.ql.SELECT`count(1) as CNT`
-          .from(Checkins)
-          .where(`checkedAt >=`, last24h)
-      );
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+
+    const [{ CNT: todayCheckins } = { CNT: 0 }] = await db.run(
+      cds.ql.SELECT`count(1) as CNT`.from(Checkins).where`checkedAt >= ${todayStart} and checkedAt < ${tomorrowStart}`
+    );
 
     return [{
       ID: "1",
@@ -48,36 +66,150 @@ module.exports = (srv) => {
     }];
   });
 
-  // Membership dağılımı (plan adına göre)
+  // -----------------------------
+  // RegisterMember Action (plan_ID seçilerek)
+  // -----------------------------
+  srv.on("RegisterMember", async (req) => {
+    const db = cds.tx(req);
+
+    const {
+      firstname, lastname, phone, email,
+      isStudent = false,
+      plan_ID,
+      paidAt
+    } = req.data.data || {};
+
+    if (!firstname || !lastname) req.error(400, "firstname/lastname required");
+    if (!plan_ID) req.error(400, "plan_ID required");
+
+    // plan -> code (MONTHLY/QUARTERLY/YEARLY) + durationDays
+    const plan = await db.run(
+      SELECT.one.from(MembershipPlans).columns(["ID", "code", "durationDays"]).where({ ID: plan_ID, isActive: true })
+    );
+    if (!plan) req.error(400, "Membership plan not found or inactive");
+    if (!plan.code) req.error(400, "MembershipPlans.code is missing. Fill code to match PricingPlans.code");
+
+    const pricing = await getPricingByCode(db, plan.code);
+    const amount = calcAmount(pricing, isStudent);
+
+    // member create
+    const memberID = cds.utils.uuid();
+    await db.run(
+      INSERT.into(Members).entries({
+        ID: memberID,
+        firstname,
+        lastname,
+        phone: phone || "",
+        email: email || "",
+        status: "ACTIVE",
+        isStudent
+      })
+    );
+
+    // membership create: durationDays (öncelik), yoksa pricing.durationMonths
+    const start = new Date();
+    const startYMD = start.toISOString().slice(0, 10);
+
+    const end = new Date(start);
+    const days = parseInt(plan.durationDays, 10);
+    if (Number.isFinite(days) && days > 0) {
+      end.setDate(end.getDate() + days);
+    } else {
+      const months = Number(pricing.durationMonths || 1);
+      end.setMonth(end.getMonth() + months);
+    }
+    const endYMD = end.toISOString().slice(0, 10);
+
+    const membershipID = cds.utils.uuid();
+    await db.run(
+      INSERT.into(MemberMemberships).entries({
+        ID: membershipID,
+        member_ID: memberID,
+        plan_ID,
+        startDate: startYMD,
+        endDate: endYMD,
+        status: "ACTIVE"
+      })
+    );
+
+    // payment create
+    await db.run(
+      INSERT.into(Payments).entries({
+        ID: cds.utils.uuid(),
+        member_ID: memberID,
+        membership_ID: membershipID,
+        amount,
+        paidAt: paidAt ? new Date(paidAt) : new Date(),
+        method: "CASH",
+        status: "PAID",
+        currency: pricing.currency || "TRY"
+      })
+    );
+
+    return await db.run(SELECT.one.from(Members).where({ ID: memberID }));
+  });
+
+  // -----------------------------
+  // Payment CREATE → amount otomatik hesaplansın
+  // -----------------------------
+  srv.before("CREATE", "Payments", async (req) => {
+    const db = cds.tx(req);
+
+    if (req.data.amount) return;
+
+    const membership_ID = req.data.membership_ID;
+    if (!membership_ID) req.error(400, "membership_ID is required");
+
+    // membership -> plan_ID + member_ID
+    const mm = await db.run(
+      SELECT.one.from(MemberMemberships).columns(["plan_ID", "member_ID"]).where({ ID: membership_ID })
+    );
+    if (!mm) req.error(400, "Membership not found");
+    if (!mm.plan_ID) req.error(400, "Membership has no plan_ID");
+
+    // plan -> code
+    const plan = await db.run(
+      SELECT.one.from(MembershipPlans).columns(["code"]).where({ ID: mm.plan_ID })
+    );
+    if (!plan?.code) req.error(400, "MembershipPlans.code is missing");
+
+    // member -> isStudent
+    const m = await db.run(
+      SELECT.one.from(Members).columns(["isStudent"]).where({ ID: mm.member_ID })
+    );
+
+    const pricing = await getPricingByCode(db, plan.code);
+    const amount = calcAmount(pricing, !!m?.isStudent);
+
+    req.data.amount = amount;
+    req.data.status = req.data.status || "PAID";
+    req.data.method = req.data.method || "CASH";
+    req.data.paidAt = req.data.paidAt || new Date().toISOString();
+    req.data.currency = req.data.currency || pricing.currency || "TRY";
+  });
+
+  // -----------------------------
+  // Membership dağılımı
+  // -----------------------------
   srv.on("READ", "MembershipDist", async (req) => {
     const db = cds.tx(req);
 
-   // CAP'in her sürümünde en stabil yöntem: string expression kullanmak
-  const rows = await db.run(
-    cds.ql.SELECT
-      .from(MemberMemberships)
-      .columns([
-        "plan.name as planName",
-        "count(1) as count"
-      ])
-      .groupBy("plan.name")
-      .orderBy("count desc")
-  );
+    const rows = await db.run(
+      cds.ql.SELECT.from(MemberMemberships)
+        .columns(["plan.name as planName", "count(1) as count"])
+        .groupBy("plan.name")
+        .orderBy("count desc")
+    );
 
     return (rows || []).filter(r => r.planName);
   });
 
-  // Alerts (minimum MVP)
-  srv.on("READ", "Alerts", async (req) => {
-const cds = require("@sap/cds");
-
-module.exports = (srv) => {
-  const { MemberMemberships } = srv.entities;
-
+  // -----------------------------
+  // Alerts
+  // -----------------------------
   srv.on("READ", "Alerts", async (req) => {
     const db = cds.tx(req);
 
-    // 1) Süresi 7 gün içinde dolacak (CQL ile stabil)
     const now = new Date();
     const nowYMD = now.toISOString().substring(0, 10);
     const in7 = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
@@ -91,171 +223,13 @@ module.exports = (srv) => {
         .and(`endDate <=`, in7YMD)
     );
 
-    // 2) Süresi dolmuş
     const [{ CNT: expired } = { CNT: 0 }] = await db.run(
-      cds.ql.SELECT`count(1) as CNT`
-        .from(MemberMemberships)
-        .where({ status: "EXPIRED" })
+      cds.ql.SELECT`count(1) as CNT`.from(MemberMemberships).where({ status: "EXPIRED" })
     );
 
-    // 3) Son 30 günde hiç check-in yok (HANA SQL ile doğru)
-    // ⚠️ Bu tabloların isimleri sende farklı olabilir:
-    // - GYM_MEMBERS
-    // - GYM_CHECKINS
-    //
-    // Eğer 500 alırsan, tek sebep tablo adı -> doğru adı yazıp düzelteceğiz.
-    const sqlInactive30 = `
-      SELECT COUNT(1) AS "CNT"
-      FROM "GYM_MEMBERS" m
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM "GYM_CHECKINS" c
-        WHERE c."member_ID" = m."ID"
-          AND c."checkedAt" >= ADD_DAYS(CURRENT_UTCTIMESTAMP, -30)
-      )
-    `;
-
-    let inactive30 = 0;
-    try {
-      const r = await db.run(sqlInactive30);
-      inactive30 = (r && r[0] && r[0].CNT) ? r[0].CNT : 0;
-    } catch (e) {
-      // Tablo adı farklıysa burada patlar; dashboard’u tamamen kırmayalım
-      inactive30 = 0;
-      console.warn("INACTIVE_30 SQL failed (table name mismatch likely):", e.message);
-    }
-
     return [
-      {
-        code: "EXP_SOON",
-        title: "Süresi 7 gün içinde dolacak üyeler",
-        desc: "Üyelik bitişi yaklaşanlar",
-        count: expSoon,
-        state: expSoon > 0 ? "Warning" : "Information"
-      },
-      {
-        code: "EXPIRED",
-        title: "Süresi dolmuş üyelikler",
-        desc: "Yenileme / tahsilat aksiyonu",
-        count: expired,
-        state: expired > 0 ? "Error" : "Information"
-      },
-      {
-        code: "INACTIVE_30",
-        title: "30 gündür gelmeyen üyeler",
-        desc: "Geri kazanım fırsatı",
-        count: inactive30,
-        state: inactive30 > 0 ? "Warning" : "Information"
-      }
+      { code: "EXP_SOON", title: "Süresi 7 gün içinde dolacak üyeler", desc: "Üyelik bitişi yaklaşanlar", count: expSoon, state: expSoon > 0 ? "Warning" : "Information" },
+      { code: "EXPIRED", title: "Süresi dolmuş üyelikler", desc: "Yenileme / tahsilat aksiyonu", count: expired, state: expired > 0 ? "Error" : "Information" }
     ];
   });
-};
-  });
-
-  // Today check-ins listesi
-  srv.on("READ", "TodayCheckins", async (req) => {
-    const db = cds.tx(req);
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-  // 1) Bugünkü son check-in'ler (üye ID + ad + saat)
-  const checkins = await db.run(
-    cds.ql.SELECT
-      .from(Checkins)
-      .columns([
-        "ID as checkinID",
-  "checkedAt",
-  "member_ID as memberID",
-  "member.firstname as firstName",
-  "member.lastname as lastName"
-      ])
-      .where(`checkedAt >=`, last24h)
-      .orderBy("checkedAt desc")
-      .limit(20)
-  );
-
-  const a = checkins || [];
-  if (!a.length) return [];
-
-  // 2) Bu check-in'lerde geçen üyeleri topla
-  const memberIDs = [...new Set(a.map(x => x.memberID).filter(Boolean))];
-  if (!memberIDs.length) {
-    return a.map(r => _mapCheckinRow(r, null));
-  }
-
-  // 3) Üyelerin ACTIVE üyeliklerini + plan adını tek seferde çek
-  //    (Bir üyede birden fazla ACTIVE olabilir; en güncel endDate'i seçeriz)
-  const memberships = await db.run(
-    cds.ql.SELECT
-      .from(MemberMemberships)
-      .columns([
-        { ref: ["member", "ID"], as: "memberID" },
-        { ref: ["plan", "name"], as: "planName" },
-        "endDate",
-        "status"
-      ])
-      .where({ status: "ACTIVE" })
-      .and({ member_ID: { in: memberIDs } })
-  );
-
-  // 4) memberID -> en uygun ACTIVE membership (max endDate)
-  const bestByMember = new Map();
-  for (const m of memberships || []) {
-    const prev = bestByMember.get(m.memberID);
-    if (!prev) {
-      bestByMember.set(m.memberID, m);
-      continue;
-    }
-    // endDate büyük olanı seç
-    const prevEnd = prev.endDate ? new Date(prev.endDate) : new Date(0);
-    const currEnd = m.endDate ? new Date(m.endDate) : new Date(0);
-    if (currEnd > prevEnd) bestByMember.set(m.memberID, m);
-  }
-
-  // 5) UI formatına çevir
-  return a.map(r => _mapCheckinRow(r, bestByMember.get(r.memberID)));
-
-  function _mapCheckinRow(r, mm) {
-    const t = new Date(r.checkedAt);
-    const hh = String(t.getHours()).padStart(2, "0");
-    const mmn = String(t.getMinutes()).padStart(2, "0");
-
-    const hasActive = !!mm;
-    return {
-      checkinID: r.checkinID,
-      memberName: `${r.firstname || ""} ${r.lastname || ""}`.trim(),
-      time: `${hh}:${mmn}`,
-      membership: hasActive ? (mm.planName || "") : "",
-      statusText: hasActive ? "Aktif" : "Pasif",
-      statusState: hasActive ? "Success" : "Error"
-    };
-  }
-});
-
-  // Trend (şimdilik sabit; sonra HANA SQL ile gerçek yapacağız)
-  srv.on("READ", "MembersTrend", async (req) => {
-  const db = cds.tx(req);
-
-  // TABLO ADI: CAP/HANA’da farklı olabilir.
-  // En güvenlisi: persistence name varsa onu kullan.
-  const membersTable =
-    (srv.entities.Members && srv.entities.Members["@cds.persistence.name"]) || "GYM_MEMBERS";
-
-  const sql = `
-    SELECT
-      TO_VARCHAR(createdAt, 'YYYY-MM') AS "monthKey",
-      TO_VARCHAR(createdAt, 'MON YYYY') AS "monthLabel",
-      COUNT(1) AS "newMembers"
-    FROM "${membersTable}"
-    WHERE createdAt >= ADD_MONTHS(CURRENT_UTCTIMESTAMP, -5)
-    GROUP BY
-      TO_VARCHAR(createdAt, 'YYYY-MM'),
-      TO_VARCHAR(createdAt, 'MON YYYY')
-    ORDER BY "monthKey"
-  `;
-
-  return await db.run(sql);
-});
 };

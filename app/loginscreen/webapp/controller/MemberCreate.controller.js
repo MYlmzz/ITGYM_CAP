@@ -9,7 +9,6 @@ sap.ui.define([
   return Controller.extend("loginscreen.controller.MemberCreate", {
 
     onInit: function () {
-      // Yeni üye modeli
       this.getView().setModel(new JSONModel({
         firstname: "",
         lastname: "",
@@ -18,8 +17,7 @@ sap.ui.define([
         status: "ACTIVE",
 
         startMembership: true,
-        membershipMonths: 1,
-        plan_ID: ""        // ⬅️ seçilen planın UUID'si buraya gelecek
+        plan_ID: "" // seçilen planın UUID'si
       }), "member");
     },
 
@@ -27,7 +25,7 @@ sap.ui.define([
       const oData = this.getView().getModel("member").getData();
 
       if (!oData.firstname || !oData.lastname) {
-        sap.m.MessageBox.warning("Ad ve Soyad zorunludur.");
+        MessageBox.warning("Ad ve Soyad zorunludur.");
         return;
       }
 
@@ -36,9 +34,9 @@ sap.ui.define([
       try {
         this.getView().setBusy(true);
 
-        // 1) Members tablosuna INSERT (HANA)
+        // 1) Member create
         const oMembersBinding = oAdmin.bindList("/Members");
-        const oCreatedCtx = oMembersBinding.create({
+        const oCreatedMemberCtx = oMembersBinding.create({
           firstname: oData.firstname,
           lastname: oData.lastname,
           phone: oData.phone || "",
@@ -46,47 +44,67 @@ sap.ui.define([
           status: oData.status || "ACTIVE"
         });
 
-        await oCreatedCtx.created(); // create tamamlanana kadar bekle
-        const oCreatedMember = oCreatedCtx.getObject();
-        const sMemberId = oCreatedMember.ID; // HANA’da oluşan ID
+        await oCreatedMemberCtx.created();
+        const sMemberId = oCreatedMemberCtx.getObject().ID;
 
-        // 2) Checkbox seçiliyse MemberMemberships tablosuna INSERT (HANA)
+        // Üyelik isteniyorsa plan zorunlu
         if (oData.startMembership) {
-          const iMonths = parseInt(oData.membershipMonths, 10) || 1;
-
-          const dStart = new Date();
-          const dEnd = new Date(dStart);
-          dEnd.setMonth(dEnd.getMonth() + iMonths);
+          if (!oData.plan_ID) {
+            MessageBox.warning("Üyelik paketi seçiniz.");
+            return;
+          }
 
           const toYMD = (d) => d.toISOString().slice(0, 10);
 
+          // 2) Planı oku (durationDays)
+          // OData V4 key formatı: Entity(<key>) burada UUID string key çalışıyor
+          const oPlanCtx = oAdmin.bindContext(`/MembershipPlans(${oData.plan_ID})`);
+          const oPlan = await oPlanCtx.requestObject();
+          const durationDays = parseInt(oPlan?.durationDays, 10) || 30;
+
+          // 3) Membership create (plan_ID ile)
+          const dStart = new Date();
+          const dEnd = new Date(dStart);
+          dEnd.setDate(dEnd.getDate() + durationDays);
+
           const oMmBinding = oAdmin.bindList("/MemberMemberships");
           const oMmCtx = oMmBinding.create({
-            member_ID: sMemberId,     // association fk
-            // plan_ID: "<UUID>"       // plan seçimini OData’dan gerçek bağlayınca eklenecek
+            member_ID: sMemberId,
+            plan_ID: oData.plan_ID,
             startDate: toYMD(dStart),
             endDate: toYMD(dEnd),
             status: "ACTIVE"
           });
 
           await oMmCtx.created();
+          const sMembershipId = oMmCtx.getObject().ID;
+
+          // 4) Payment create (amount göndermiyoruz -> backend hesaplayacak)
+          const oPayBinding = oAdmin.bindList("/Payments");
+          const oPayCtx = oPayBinding.create({
+            member_ID: sMemberId,
+            membership_ID: sMembershipId,
+            method: "CASH",
+            status: "PAID",
+            paidAt: new Date().toISOString()
+          });
+
+          await oPayCtx.created();
         }
 
-        sap.m.MessageToast.show("Kayıt başarılı. HANA'ya yazıldı.");
+        MessageToast.show("Kayıt başarılı. HANA'ya yazıldı.");
         sap.ui.core.UIComponent.getRouterFor(this).navTo("RouteHome", {}, true);
 
       } catch (e) {
         console.error(e);
-        sap.m.MessageBox.error("Kayıt hatası: " + (e?.message || e));
+        MessageBox.error("Kayıt hatası: " + (e?.message || e));
       } finally {
         this.getView().setBusy(false);
       }
     },
 
     onNavBack: function () {
-      sap.ui.core.UIComponent
-        .getRouterFor(this)
-        .navTo("RouteHome", {}, true);
+      sap.ui.core.UIComponent.getRouterFor(this).navTo("RouteHome", {}, true);
     }
   });
 });

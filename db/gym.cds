@@ -8,9 +8,11 @@ entity Members: cuid, managed{
     phone     : String(30);
     email     : String(50);
     status    : String(10); //ACTIVE | PASSIVE
+    isStudent : Boolean default false;
 }
 
 entity MembershipPlans: cuid , managed{
+    code         : String(20);
     name         : String(60);
     durationDays : Integer;
     price        : Decimal(12,2);

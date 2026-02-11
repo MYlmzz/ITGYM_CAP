@@ -1,0 +1,4 @@
+code;name;durationMonths;basePrice;studentDiscountPct;currency;isActive
+MONTHLY;Aylık;1;3000;10;TRY;true
+QUARTERLY;3 Aylık;3;7000;10;TRY;true
+YEARLY;Yıllık;12;22000;10;TRY;true

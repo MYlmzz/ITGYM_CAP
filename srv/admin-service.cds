@@ -1,4 +1,5 @@
 using { gym as db } from '../db/gym';
+using { gym as pricing } from '../db/pricing';
 
 service AdminService @(path:'/odata/v4/admin') {
 
@@ -11,6 +12,7 @@ service AdminService @(path:'/odata/v4/admin') {
   entity Checkins          as projection on db.Checkins;
   entity ActiveMembers     as projection on Members where status = 'ACTIVE';
   entity PassiveMembers    as projection on Members where status = 'PASSIVE';
+  entity PricingPlans      as projection on pricing.PricingPlans;
   // Dashboard read-only (hesaplanmış)
   @readonly entity DashboardKPI {
     key ID           : String(1);
@@ -48,4 +50,16 @@ service AdminService @(path:'/odata/v4/admin') {
     statusText       : String(20);
     statusState      : String(20);
   }
+
+  type RegisterMemberInput {
+  firstname   : String(60);
+  lastname    : String(60);
+  phone       : String(30);
+  email       : String(120);
+  isStudent   : Boolean;
+  plan_ID     : UUID;         // sen UI'da plan_ID seçiyorsun, bunu kullanacağız
+  paidAt      : Timestamp;    // opsiyonel
+}; 
+
+action RegisterMember(data : RegisterMemberInput) returns Members;
 }
