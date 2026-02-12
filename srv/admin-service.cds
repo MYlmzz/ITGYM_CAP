@@ -1,5 +1,6 @@
 using { gym as db } from '../db/gym';
 using { gym as pricing } from '../db/pricing';
+using { gym as inv } from '../db/inventory';
 
 service AdminService @(path:'/odata/v4/admin') {
 
@@ -13,6 +14,12 @@ service AdminService @(path:'/odata/v4/admin') {
   entity ActiveMembers     as projection on Members where status = 'ACTIVE';
   entity PassiveMembers    as projection on Members where status = 'PASSIVE';
   entity PricingPlans      as projection on pricing.PricingPlans;
+  extend service AdminService {
+    // Ürün yönetimi ekranı için
+    entity Products as projection on inv.Products;
+
+    // Dashboard'da stok uyarısı göstermek için Alert entity'sini güncelleyebiliriz
+}
   // Dashboard read-only (hesaplanmış)
   @readonly entity DashboardKPI {
     key ID           : String(1);

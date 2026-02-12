@@ -21,7 +21,8 @@ function calcAmount(pricing, isStudent) {
 }
 
 module.exports = (srv) => {
-  const { Members, MemberMemberships, MembershipPlans, Payments, Checkins } = srv.entities;
+  // [GÜNCELLEME 1] Products entity'sini buraya ekledik
+  const { Members, MemberMemberships, MembershipPlans, Payments, Checkins, Products } = srv.entities;
 
   // -----------------------------
   // Dashboard KPI
@@ -227,9 +228,36 @@ module.exports = (srv) => {
       cds.ql.SELECT`count(1) as CNT`.from(MemberMemberships).where({ status: "EXPIRED" })
     );
 
+    // [GÜNCELLEME 2] Kritik Stok Kontrolü
+    const [{ CNT: lowStockCount } = { CNT: 0 }] = await db.run(
+      cds.ql.SELECT`count(1) as CNT`
+        .from(Products)
+        .where`stockQuantity <= minStockLevel`
+    );
+
     return [
-      { code: "EXP_SOON", title: "Süresi 7 gün içinde dolacak üyeler", desc: "Üyelik bitişi yaklaşanlar", count: expSoon, state: expSoon > 0 ? "Warning" : "Information" },
-      { code: "EXPIRED", title: "Süresi dolmuş üyelikler", desc: "Yenileme / tahsilat aksiyonu", count: expired, state: expired > 0 ? "Error" : "Information" }
+      { 
+        code: "EXP_SOON", 
+        title: "Süresi 7 gün içinde dolacak üyeler", 
+        desc: "Üyelik bitişi yaklaşanlar", 
+        count: expSoon, 
+        state: expSoon > 0 ? "Warning" : "Information" 
+      },
+      { 
+        code: "EXPIRED", 
+        title: "Süresi dolmuş üyelikler", 
+        desc: "Yenileme / tahsilat aksiyonu", 
+        count: expired, 
+        state: expired > 0 ? "Error" : "Information" 
+      },
+      // Yeni eklenen Stok Uyarısı
+      { 
+        code: "LOW_STOCK", 
+        title: "Kritik Stok Uyarısı", 
+        desc: "Stok seviyesi sınırın altında olan ürünler", 
+        count: lowStockCount, 
+        state: lowStockCount > 0 ? "Error" : "Information" 
+      }
     ];
   });
 };
