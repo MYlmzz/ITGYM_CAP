@@ -173,6 +173,9 @@ sap.ui.define([
     },
     onPressPassiveMembers: function () {
       sap.m.URLHelper.redirect("/memberslist/index.html#/PassiveMembers", false);
+    },
+    onPressTrainersList: function () {
+      sap.m.URLHelper.redirect("/trainers/index.html", false);
     }
   });
 });

@@ -38,7 +38,7 @@
             </m:TileContent>
           </m:GenericTile>
 
-          <m:GenericTile id="_IDGenGenericTile2" header="Süresi Dolan" subheader="Aksiyon gerekli" press=".onPressPassiveMembers">
+          <m:GenericTile id="_IDGenGenericTile2" header="Süresi Dolan" subheader="Pasif Üyeler" press=".onPressPassiveMembers">
             <m:TileContent id="_IDGenTileContent2">
               <m:NumericContent id="_IDGenNumericContent2" value="{kpi>/expiredMembers}" valueColor="Error"/>
             </m:TileContent>
@@ -53,6 +53,12 @@
           <m:GenericTile id="_IDGenGenericTile5" header="Bugün Check-in" subheader="Giriş sayısı">
             <m:TileContent id="_IDGenTileContent4">
               <m:NumericContent id="_IDGenNumericContent4" value="{kpi>/todayCheckins}" valueColor="Neutral"/>
+            </m:TileContent>
+          </m:GenericTile>
+
+          <m:GenericTile id="_IDGenGenericTile6" header="Personel Listesi"  press=".onPressTrainersList">
+            <m:TileContent id="_IDGenTileContent6">
+              <m:NumericContent id="_IDGenNumericContent6" value="{kpi>/trainersList}" valueColor="Neutral"/>
             </m:TileContent>
           </m:GenericTile>
 

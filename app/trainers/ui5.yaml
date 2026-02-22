@@ -1,6 +1,6 @@
 specVersion: "4.0"
 metadata:
-  name: memberslist
+  name: trainers
 type: application
 server:
   customMiddleware:

@@ -14,6 +14,9 @@ service AdminService @(path:'/odata/v4/admin') {
   entity ActiveMembers     as projection on Members where status = 'ACTIVE';
   entity PassiveMembers    as projection on Members where status = 'PASSIVE';
   entity PricingPlans      as projection on pricing.PricingPlans;
+
+  entity Trainers          as projection on db.Trainers;
+  entity PTSessions        as projection on db.PTSessions;
   extend service AdminService {
     // Ürün yönetimi ekranı için
     entity Products as projection on inv.Products;
@@ -57,7 +60,19 @@ service AdminService @(path:'/odata/v4/admin') {
     statusText       : String(20);
     statusState      : String(20);
   }
-
+  // YENİ: Daily PT Schedule helper entity
+  @readonly entity DailyPTSchedule {
+    key sessionID    : UUID;
+    trainerID        : UUID;
+    trainerName      : String(120);
+    memberID         : UUID;
+    memberName       : String(120);
+    startAt          : Timestamp;
+    endAt            : Timestamp;
+    title            : String(120);
+    status           : String(20);
+    location         : String(80);
+  }
   type RegisterMemberInput {
   firstname   : String(60);
   lastname    : String(60);
@@ -69,4 +84,7 @@ service AdminService @(path:'/odata/v4/admin') {
 }; 
 
 action RegisterMember(data : RegisterMemberInput) returns Members;
+
+function getDailyPTSchedule(day : Date) returns many DailyPTSchedule;
 }
+

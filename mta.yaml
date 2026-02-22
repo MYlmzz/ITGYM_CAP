@@ -71,6 +71,10 @@ modules:
       - memberslist.zip
       name: memberslist
       target-path: app/
+    - artifacts:
+      - trainers.zip
+      name: trainers
+      target-path: app/
 - name: loginscreen
   type: html5
   path: app/loginscreen
@@ -84,6 +88,16 @@ modules:
 - name: memberslist
   type: html5
   path: app/memberslist
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: trainers
+  type: html5
+  path: app/trainers
   build-parameters:
     build-result: dist
     builder: custom
@@ -123,7 +137,7 @@ resources:
   type: org.cloudfoundry.managed-service
   parameters:
     config:
-      HTML5Runtime_enabled: true
+      HTML5Runtime_enabled: false
       init_data:
         instance:
           destinations:

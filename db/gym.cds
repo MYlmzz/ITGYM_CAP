@@ -41,3 +41,24 @@ entity Checkins : cuid, managed {
   checkedAt : Timestamp;
   source    : String(20);
 }
+
+entity Trainers : cuid, managed {
+  firstname : String(40);
+  lastname  : String(40);
+  phone     : String(40);
+  email     : String(40);
+  specialty : String(40);
+  isActive  : Boolean default true;
+
+}
+
+entity PTSessions : cuid, managed {
+  trainer    : Association to Trainers;
+  member     : Association to Members;
+  startAt    : Timestamp;
+  endAt      : Timestamp;
+  location   : String(80);
+  status     : String(20);  // PLANNED | DONE | CANCELLED
+  title      : String(120);
+  notes      : String(255);
+}

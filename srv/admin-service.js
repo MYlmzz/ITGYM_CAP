@@ -22,8 +22,75 @@ function calcAmount(pricing, isStudent) {
 
 module.exports = (srv) => {
   // [GÜNCELLEME 1] Products entity'sini buraya ekledik
-  const { Members, MemberMemberships, MembershipPlans, Payments, Checkins, Products } = srv.entities;
+  const { Members, MemberMemberships, MembershipPlans, Payments, Checkins, Products, Trainers, PTSessions } = srv.entities;
 
+  // ========================================
+  // PT SESSIONS VALIDATIONS
+  // ========================================
+  srv.before(['CREATE', 'UPDATE'], 'PTSessions', async (req) => {
+    const db = cds.tx(req);
+    const { startAt, endAt, status, trainer_ID, member_ID, title } = req.data;
+
+    // 1. Validate timestamps
+    if (!startAt || !endAt) {
+      return req.error(400, 'startAt and endAt are required');
+    }
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    if (end <= start) {
+      return req.error(400, 'endAt must be after startAt');
+    }
+
+    // 2. Validate status
+    const validStatuses = ['PLANNED', 'DONE', 'CANCELLED'];
+    if (status && !validStatuses.includes(status)) {
+      return req.error(400, `status must be one of: ${validStatuses.join(', ')}`);
+    }
+
+    // 3. Validate trainer_ID exists
+    if (!trainer_ID) {
+      return req.error(400, 'trainer_ID is required');
+    }
+    const trainer = await db.run(SELECT.one.from(Trainers).where({ ID: trainer_ID }));
+    if (!trainer) {
+      return req.error(400, 'Trainer not found');
+    }
+
+    // 4. Validate member (if present) or title (if no member)
+    if (!member_ID && !title) {
+      return req.error(400, 'Either member or title must be provided');
+    }
+    if (member_ID) {
+      const member = await db.run(SELECT.one.from(Members).where({ ID: member_ID }));
+      if (!member) {
+        return req.error(400, 'Member not found');
+      }
+    }
+
+    // 5. Check for overlaps (excluding current record on UPDATE)
+    let overlapQuery = SELECT.from(PTSessions)
+      .columns(['ID', 'startAt', 'endAt'])
+      .where({
+        trainer_ID,
+        and: [
+          { startAt: { '<': endAt } },
+          { endAt: { '>': startAt } }
+        ]
+      });
+
+    // On UPDATE, exclude the current session ID
+    if (req.context.query.UPDATE) {
+      const sessionID = req.context.query.UPDATE.data.ID || req.data.ID;
+      if (sessionID) {
+        overlapQuery = overlapQuery.where`ID <> ${sessionID}`;
+      }
+    }
+
+    const overlaps = await db.run(overlapQuery);
+    if (overlaps && overlaps.length > 0) {
+      return req.error(400, 'Trainer has overlapping PT session in this time range.');
+    }
+  });
   // -----------------------------
   // Dashboard KPI
   // -----------------------------
@@ -259,5 +326,60 @@ module.exports = (srv) => {
         state: lowStockCount > 0 ? "Error" : "Information" 
       }
     ];
+  });
+  // ========================================
+  // DAILY PT SCHEDULE FUNCTION (YENİ)
+  // ========================================
+  srv.on("getDailyPTSchedule", async (req) => {
+    const db = cds.tx(req);
+    const dayParam = req.data.day; // Expected format: YYYY-MM-DD or Date object
+
+    // Parse the day parameter
+    let dayDate;
+    if (typeof dayParam === 'string') {
+      dayDate = new Date(dayParam);
+    } else {
+      dayDate = new Date(dayParam);
+    }
+
+    // Compute day boundaries (local time)
+    const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0, 0);
+    const dayEnd = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate() + 1, 0, 0, 0, 0);
+
+    // Query PTSessions with expanded trainer and member
+    const sessions = await db.run(
+      SELECT.from(PTSessions)
+        .columns(['ID', 'startAt', 'endAt', 'title', 'status', 'location', 'trainer_ID', 'member_ID'])
+        .where({
+          and: [
+            { startAt: { '<': dayEnd } },
+            { endAt: { '>': dayStart } }
+          ]
+        })
+    );
+
+    // Expand trainer and member data
+    const result = [];
+    for (const session of sessions || []) {
+      const trainer = await db.run(SELECT.one.from(Trainers).where({ ID: session.trainer_ID }));
+      const member = session.member_ID 
+        ? await db.run(SELECT.one.from(Members).where({ ID: session.member_ID }))
+        : null;
+
+      result.push({
+        sessionID: session.ID,
+        trainerID: session.trainer_ID,
+        trainerName: trainer ? `${trainer.firstName} ${trainer.lastName}` : 'Unknown',
+        memberID: session.member_ID || null,
+        memberName: member ? `${member.firstname} ${member.lastname}` : 'No Member (Block Time)',
+        startAt: session.startAt,
+        endAt: session.endAt,
+        title: session.title,
+        status: session.status,
+        location: session.location
+      });
+    }
+
+    return result;
   });
 };
