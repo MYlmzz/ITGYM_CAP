@@ -25,6 +25,8 @@ modules:
   path: gen/db
   requires:
   - name: ITGYM-db
+    properties:
+      TARGET_CONTAINER: ~{hdi-container-name}
   parameters:
     buildpack: nodejs_buildpack
 - name: ITGYM
@@ -128,6 +130,8 @@ resources:
   parameters:
     service: hana
     service-plan: hdi-shared
+  properties:
+    hdi-container-name: ${service-name}
 - name: ITGYM-connectivity
   type: org.cloudfoundry.managed-service
   parameters:

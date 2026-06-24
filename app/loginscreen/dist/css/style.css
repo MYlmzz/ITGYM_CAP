@@ -1,0 +1,61 @@
+/* ---------- THEMES ---------- */
+:root {
+  --bg-gradient: linear-gradient(135deg, #f5f7fa, #e4ebf5);
+  --card-bg: #ffffff;
+  --text-color: #32363a;
+}
+
+.dark {
+  --bg-gradient: linear-gradient(135deg, #1c2228, #2a3138);
+  --card-bg: #2f363d;
+  --text-color: #f1f1f1;
+}
+
+/* ---------- LOGIN ---------- */
+.loginPage {
+  background: var(--bg-gradient);
+}
+
+.loginCard {
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  width: 360px;
+  color: var(--text-color);
+  animation: fadeIn 0.5s ease;
+}
+
+.loginLogo {
+  width: 140px;
+  margin-bottom: 1.5rem;
+}
+
+.loginTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.loginButton {
+  margin-top: 1.5rem;
+}
+
+/* ---------- ERROR SHAKE ---------- */
+.shake {
+  animation: shake 0.35s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+/* ---------- ANIM ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

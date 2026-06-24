@@ -13,14 +13,14 @@
     "@cap-js/sqlite": "^2",
     "@sap/cds-dk": "^9",
     "cds-plugin-ui5": "^0.13.0",
-    "rimraf": "^5.0.5",
-    "mbt": "^1.2.29"
+    "mbt": "^1.2.29",
+    "rimraf": "^5.0.5"
   },
   "scripts": {
     "start": "cds-serve",
     "watch-loginscreen": "cds watch --open loginscreen/index.html?sap-ui-xx-viewCache=false --livereload false",
     "undeploy": "cf undeploy ITGYM --delete-services --delete-service-keys --delete-service-brokers",
-    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "build": "rimraf resources mta_archives && /usr/local/bin/mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-home": "cds watch --open home/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-memberslist": "cds watch --open memberslist/index.html?sap-ui-xx-viewCache=false --livereload false",

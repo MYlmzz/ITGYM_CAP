@@ -1,0 +1,2 @@
+ID,email,password,name,role,isActive,createdAt
+11111111-1111-1111-1111-111111111111,my@sap,123,muhittin,ADMIN,true,2026-06-07T00:00:00Z
